@@ -1,0 +1,5 @@
+{
+  "name": "Interaktiver Geometrie-Lernhelfer",
+  "description": "Eine visuelle und interaktive Webanwendung, um die Grundlagen geometrischer Formen, einschließlich ihrer Eigenschaften und Formeln für Flächeninhalt und Umfang, zu erlernen.",
+  "requestFramePermissions": []
+}
