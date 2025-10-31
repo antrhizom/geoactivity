@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
-import { ShapeSelector } from './components/ShapeSelector';
-import { ShapeDisplay } from './components/ShapeDisplay';
-import { ShapeInfo } from './components/ShapeInfo';
-import { Exercises } from './components/Exercises';
-import { SHAPES } from './constants';
-import type { Shape } from './types';
+import { ShapeSelector } from './components/ShapeSelector.tsx';
+import { ShapeDisplay } from './components/ShapeDisplay.tsx';
+import { ShapeInfo } from './components/ShapeInfo.tsx';
+import { Exercises } from './components/Exercises.tsx';
+import { SHAPES } from './constants.tsx';
+import type { Shape } from './types.ts';
 
 const App: React.FC = () => {
   const [selectedShape, setSelectedShape] = useState<Shape>(SHAPES[0]);

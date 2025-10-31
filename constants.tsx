@@ -1,5 +1,6 @@
+
 import React from 'react';
-import type { Shape, Exercise } from './types';
+import type { Shape, Exercise } from './types.ts';
 
 // Helper function to generate a random integer
 const getRandomInt = (min: number, max: number) => {

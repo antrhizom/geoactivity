@@ -1,6 +1,6 @@
 
 import React from 'react';
-import type { Shape } from '../types';
+import type { Shape } from '../types.ts';
 
 interface ShapeInfoProps {
   shape: Shape;

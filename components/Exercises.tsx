@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import type { Shape, Exercise } from '../types';
+import type { Shape, Exercise } from '../types.ts';
 
 interface ExercisesProps {
   shape: Shape;

@@ -1,23 +1,416 @@
-
 <!DOCTYPE html>
 <html lang="de">
-  <head>
-    <meta charset="UTF-agpm" />
+<head>
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Interaktiver Geometrie-Lernhelfer</title>
     <script src="https://cdn.tailwindcss.com"></script>
-  <script type="importmap">
+    <style>
+        /* Simple fade transition */
+        .fade-in {
+            opacity: 1;
+            transition: opacity 300ms ease-in-out;
+        }
+        .fade-out {
+            opacity: 0;
+            transition: opacity 300ms ease-in-out;
+        }
+    </style>
+<script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
   }
 }
 </script>
 </head>
-  <body class="bg-slate-50">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl sm:text-5xl font-bold text-sky-600 dark:text-sky-400">
+                Interaktiver Geometrie-Lernhelfer
+            </h1>
+            <p class="mt-2 text-lg text-slate-600 dark:text-slate-400">
+                Wähle eine Form, um ihre Eigenschaften und Formeln zu entdecken.
+            </p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <aside id="shape-selector-container" class="lg:col-span-1"></aside>
+            <div class="lg:col-span-2 space-y-8">
+                <div id="shape-content-wrapper" class="fade-out">
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-8">
+                        <div id="shape-display-container" class="md:col-span-2"></div>
+                        <div id="shape-info-container" class="md:col-span-3"></div>
+                    </div>
+                </div>
+                <div id="exercise-wrapper" class="fade-out">
+                    <div id="exercise-container"></div>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="text-center mt-12 text-sm text-slate-500 dark:text-slate-400">
+            <p>&copy; <span id="year"></span> Geometrie-Lernhelfer. Alle Rechte vorbehalten.</p>
+        </footer>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- DATA ---
+    const getRandomInt = (min, max) => {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    };
+
+    const SHAPES = [
+      {
+        id: 'kreis',
+        name: 'Kreis',
+        description: 'Ein Kreis ist eine perfekt runde Form. Alle Punkte am Rand (Kreislinie) haben den gleichen Abstand zum Mittelpunkt.',
+        properties: [
+          { label: 'Seiten', value: 'Keine (eine durchgehende Linie)' },
+          { label: 'Ecken', value: '0' },
+        ],
+        formulas: {
+          area: { label: 'Flächeninhalt (A)', formula: 'A = π · r²', explanation: 'Pi mal dem Radius zum Quadrat.' },
+          perimeter: { label: 'Umfang (U)', formula: 'U = 2 · π · r', explanation: 'Zwei mal Pi mal dem Radius.' }
+        },
+        component: (className) => `
+            <svg viewBox="0 0 100 100" class="${className}">
+                <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="4" fill="none" />
+                <line x1="50" y1="50" x2="95" y2="50" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" />
+                <text x="73" y="45" fontSize="10" fill="currentColor">r</text>
+            </svg>`,
+        generateExercise: () => {
+            const type = Math.random() > 0.5 ? 'area' : 'perimeter';
+            const r = getRandomInt(1, 20);
+            if (type === 'area') {
+                return {
+                    type: 'area', parameters: { r },
+                    question: `Berechne den Flächeninhalt eines Kreises mit dem Radius r = ${r}. Runde auf zwei Dezimalstellen.`,
+                    calculateCorrectAnswer: params => Math.PI * params.r * params.r,
+                };
+            }
+            return {
+                type: 'perimeter', parameters: { r },
+                question: `Berechne den Umfang eines Kreises mit dem Radius r = ${r}. Runde auf zwei Dezimalstellen.`,
+                calculateCorrectAnswer: params => 2 * Math.PI * params.r,
+            };
+        }
+      },
+      {
+        id: 'quadrat',
+        name: 'Quadrat',
+        description: 'Ein Quadrat ist ein Viereck mit vier gleich langen Seiten und vier rechten Winkeln (90°).',
+        properties: [
+          { label: 'Seiten', value: '4 (gleich lang)' },
+          { label: 'Ecken', value: '4 (alle 90°)' },
+        ],
+        formulas: {
+          area: { label: 'Flächeninhalt (A)', formula: 'A = a²', explanation: 'Seitenlänge mal Seitenlänge.' },
+          perimeter: { label: 'Umfang (U)', formula: 'U = 4 · a', explanation: 'Vier mal die Seitenlänge.' }
+        },
+        component: (className) => `
+            <svg viewBox="0 0 100 100" class="${className}">
+                <rect x="5" y="5" width="90" height="90" stroke="currentColor" strokeWidth="4" fill="none" />
+                <text x="48" y="55" fontSize="10" fill="currentColor">a</text>
+            </svg>`,
+        generateExercise: () => {
+            const type = Math.random() > 0.5 ? 'area' : 'perimeter';
+            const a = getRandomInt(1, 25);
+            if (type === 'area') {
+                return {
+                    type: 'area', parameters: { a },
+                    question: `Berechne den Flächeninhalt eines Quadrats mit der Seitenlänge a = ${a}.`,
+                    calculateCorrectAnswer: params => params.a * params.a,
+                };
+            }
+            return {
+                type: 'perimeter', parameters: { a },
+                question: `Berechne den Umfang eines Quadrats mit der Seitenlänge a = ${a}.`,
+                calculateCorrectAnswer: params => 4 * params.a,
+            };
+        }
+      },
+      {
+        id: 'rechteck',
+        name: 'Rechteck',
+        description: 'Ein Rechteck ist ein Viereck, bei dem die gegenüberliegenden Seiten gleich lang sind und alle Winkel rechte Winkel (90°) sind.',
+        properties: [
+          { label: 'Seiten', value: '4 (gegenüberliegende gleich lang)' },
+          { label: 'Ecken', value: '4 (alle 90°)' },
+        ],
+        formulas: {
+          area: { label: 'Flächeninhalt (A)', formula: 'A = a · b', explanation: 'Länge mal Breite.' },
+          perimeter: { label: 'Umfang (U)', formula: 'U = 2 · (a + b)', explanation: 'Zwei mal die Summe aus Länge und Breite.' }
+        },
+        component: (className) => `
+            <svg viewBox="0 0 100 60" class="${className}">
+                <rect x="5" y="5" width="90" height="50" stroke="currentColor" strokeWidth="4" fill="none" />
+                <text x="48" y="35" fontSize="10" fill="currentColor">a</text>
+                <text x="50" y="20" fontSize="10" fill="currentColor" transform="rotate(90 50 20)">b</text>
+            </svg>`,
+        generateExercise: () => {
+            const type = Math.random() > 0.5 ? 'area' : 'perimeter';
+            const a = getRandomInt(1, 20);
+            let b = a;
+            while (b === a) { b = getRandomInt(1, 20); }
+            if (type === 'area') {
+                return {
+                    type: 'area', parameters: { a, b },
+                    question: `Berechne den Flächeninhalt eines Rechtecks mit den Seitenlängen a = ${a} und b = ${b}.`,
+                    calculateCorrectAnswer: params => params.a * params.b,
+                };
+            }
+            return {
+                type: 'perimeter', parameters: { a, b },
+                question: `Berechne den Umfang eines Rechtecks mit den Seitenlängen a = ${a} und b = ${b}.`,
+                calculateCorrectAnswer: params => 2 * (params.a + params.b),
+            };
+        }
+      },
+      {
+        id: 'dreieck',
+        name: 'Gleichschenkliges Dreieck',
+        description: 'Ein Dreieck ist eine Grundform mit drei Seiten und drei Ecken. Dieses spezielle Dreieck hat zwei gleich lange Seiten (Schenkel).',
+        properties: [
+          { label: 'Seiten', value: '3' },
+          { label: 'Ecken', value: '3' },
+        ],
+        formulas: {
+          area: { label: 'Flächeninhalt (A)', formula: 'A = (g · h) / 2', explanation: 'Grundseite mal Höhe, geteilt durch zwei.' },
+          perimeter: { label: 'Umfang (U)', formula: 'U = a + b + c', explanation: 'Die Summe aller drei Seitenlängen.' }
+        },
+        component: (className) => `
+            <svg viewBox="0 0 100 100" class="${className}">
+                <polygon points="5,95 95,95 50,5" stroke="currentColor" strokeWidth="4" fill="none" />
+                <line x1="50" y1="5" x2="50" y2="95" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" />
+                <text x="52" y="55" fontSize="10" fill="currentColor">h</text>
+                <text x="73" y="90" fontSize="10" fill="currentColor">g</text>
+            </svg>`,
+        generateExercise: () => {
+            const type = Math.random() > 0.5 ? 'area' : 'perimeter';
+            if (type === 'area') {
+                const g = getRandomInt(2, 20) * 2;
+                const h = getRandomInt(3, 20);
+                return {
+                    type: 'area', parameters: { g, h },
+                    question: `Berechne den Flächeninhalt eines Dreiecks mit der Grundseite g = ${g} und der Höhe h = ${h}.`,
+                    calculateCorrectAnswer: params => (params.g * params.h) / 2,
+                };
+            }
+            const g = getRandomInt(2, 15);
+            const s = getRandomInt(Math.ceil(g / 2) + 1, 20);
+            return {
+                type: 'perimeter', parameters: { g, s },
+                question: `Berechne den Umfang eines gleichschenkligen Dreiecks mit der Grundseite g = ${g} und zwei Schenkeln der Länge s = ${s}.`,
+                calculateCorrectAnswer: params => params.g + 2 * params.s,
+            };
+        }
+      },
+    ];
+
+    // --- STATE ---
+    let currentShape = SHAPES[0];
+    let currentExercise = null;
+
+    // --- DOM ELEMENTS ---
+    const shapeSelectorContainer = document.getElementById('shape-selector-container');
+    const shapeDisplayContainer = document.getElementById('shape-display-container');
+    const shapeInfoContainer = document.getElementById('shape-info-container');
+    const exerciseContainer = document.getElementById('exercise-container');
+    const shapeContentWrapper = document.getElementById('shape-content-wrapper');
+    const exerciseWrapper = document.getElementById('exercise-wrapper');
+
+    // --- RENDER FUNCTIONS ---
+    
+    const renderShapeSelector = () => {
+        const buttonsHTML = SHAPES.map(shape => {
+            const isSelected = shape.id === currentShape.id;
+            const classes = isSelected
+                ? 'bg-sky-600 text-white font-semibold shadow-md'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-sky-100 dark:hover:bg-slate-600';
+            return `
+                <button
+                    data-shape-id="${shape.id}"
+                    class="shape-btn w-full text-left px-4 py-3 rounded-lg text-lg transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:ring-sky-500 ${classes}"
+                >
+                    ${shape.name}
+                </button>
+            `;
+        }).join('');
+
+        shapeSelectorContainer.innerHTML = `
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-4 text-slate-800 dark:text-slate-100">Formen auswählen</h2>
+                <div class="space-y-3">${buttonsHTML}</div>
+            </div>
+        `;
+
+        document.querySelectorAll('.shape-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => handleSelectShape(e.currentTarget.dataset.shapeId));
+        });
+    };
+    
+    const renderShapeContent = () => {
+        // Display
+        shapeDisplayContainer.innerHTML = `
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg h-full flex flex-col justify-center items-center aspect-square">
+                <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">${currentShape.name}</h3>
+                <div class="w-full max-w-[250px] text-sky-500 dark:text-sky-400">
+                    ${currentShape.component('w-full h-auto')}
+                </div>
+            </div>`;
+
+        // Info
+        const propertiesHTML = currentShape.properties.map(prop => `
+            <li class="flex justify-between border-b border-slate-200 dark:border-slate-700 pb-1">
+                <span class="text-slate-600 dark:text-slate-400">${prop.label}:</span>
+                <span class="font-medium text-slate-800 dark:text-slate-200">${prop.value}</span>
+            </li>
+        `).join('');
+
+        const formulaCard = (title, formula, explanation) => `
+            <div class="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-lg">
+                <h4 class="font-semibold text-slate-600 dark:text-slate-300">${title}</h4>
+                <p class="text-2xl font-mono text-sky-600 dark:text-sky-400 my-2">${formula}</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">${explanation}</p>
+            </div>
+        `;
+
+        shapeInfoContainer.innerHTML = `
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg h-full flex flex-col">
+                <h2 class="text-3xl font-bold mb-2 text-slate-800 dark:text-slate-100">${currentShape.name}</h2>
+                <p class="text-slate-600 dark:text-slate-400 mb-6">${currentShape.description}</p>
+                
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-3 text-slate-700 dark:text-slate-200">Eigenschaften</h3>
+                    <ul class="space-y-2">${propertiesHTML}</ul>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-3 text-slate-700 dark:text-slate-200">Formeln</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        ${formulaCard(currentShape.formulas.area.label, currentShape.formulas.area.formula, currentShape.formulas.area.explanation)}
+                        ${formulaCard(currentShape.formulas.perimeter.label, currentShape.formulas.perimeter.formula, currentShape.formulas.perimeter.explanation)}
+                    </div>
+                </div>
+            </div>`;
+    };
+
+    const renderExercise = () => {
+        currentExercise = currentShape.generateExercise();
+        exerciseContainer.innerHTML = `
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-4 text-slate-800 dark:text-slate-100">Übungsaufgabe</h2>
+                <p class="text-slate-600 dark:text-slate-400 mb-4 text-lg">${currentExercise.question}</p>
+
+                <form id="exercise-form" class="flex flex-col sm:flex-row items-stretch gap-3">
+                    <input
+                        id="user-answer"
+                        type="text"
+                        placeholder="Deine Antwort"
+                        class="flex-grow px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 border-2 border-transparent focus:border-sky-500 focus:ring-0 focus:outline-none transition"
+                        aria-label="Antwort eingeben"
+                    />
+                    <div class="flex gap-3">
+                        <button type="submit" class="w-full sm:w-auto px-6 py-2 bg-sky-600 text-white font-semibold rounded-lg shadow-md hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:ring-sky-500 transition-colors">
+                            Prüfen
+                        </button>
+                        <button type="button" id="new-exercise-btn" class="w-full sm:w-auto px-6 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:ring-slate-500 transition-colors">
+                            Neue Aufgabe
+                        </button>
+                    </div>
+                </form>
+                <div id="feedback-container" class="mt-4"></div>
+            </div>`;
+        
+        document.getElementById('exercise-form').addEventListener('submit', handleCheckAnswer);
+        document.getElementById('new-exercise-btn').addEventListener('click', renderExercise);
+    };
+
+    const renderFeedback = (message, isCorrect) => {
+        const feedbackContainer = document.getElementById('feedback-container');
+        const classes = isCorrect 
+            ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300' 
+            : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300';
+        feedbackContainer.innerHTML = `
+            <div class="px-4 py-2 rounded-lg text-center font-medium ${classes}">
+                ${message}
+            </div>
+        `;
+    };
+
+    // --- EVENT HANDLERS & LOGIC ---
+
+    const handleSelectShape = (shapeId) => {
+        if (currentShape.id === shapeId) return;
+
+        currentShape = SHAPES.find(s => s.id === shapeId);
+
+        // Fade out
+        shapeContentWrapper.classList.remove('fade-in');
+        shapeContentWrapper.classList.add('fade-out');
+        exerciseWrapper.classList.remove('fade-in');
+        exerciseWrapper.classList.add('fade-out');
+
+        setTimeout(() => {
+            renderAll();
+            // Fade in
+            shapeContentWrapper.classList.remove('fade-out');
+            shapeContentWrapper.classList.add('fade-in');
+            exerciseWrapper.classList.remove('fade-out');
+            exerciseWrapper.classList.add('fade-in');
+        }, 300);
+    };
+
+    const handleCheckAnswer = (e) => {
+        e.preventDefault();
+        const userAnswerInput = document.getElementById('user-answer');
+        const userAnswer = userAnswerInput.value;
+        if (!currentExercise || userAnswer.trim() === '') return;
+        
+        const answerNum = parseFloat(userAnswer.replace(',', '.'));
+        
+        if (isNaN(answerNum)) {
+            renderFeedback('Bitte gib eine gültige Zahl ein.', false);
+            return;
+        }
+
+        const correctAnswer = currentExercise.calculateCorrectAnswer(currentExercise.parameters);
+        const isCorrect = Math.round(answerNum * 100) === Math.round(correctAnswer * 100);
+
+        if (isCorrect) {
+            renderFeedback(`Perfekt! Die richtige Antwort ist ${correctAnswer.toLocaleString('de-DE', { maximumFractionDigits: 2 })}.`, true);
+        } else {
+            renderFeedback('Leider nicht ganz richtig. Versuch es noch einmal!', false);
+        }
+    };
+
+    // --- INITIALIZATION ---
+    const renderAll = () => {
+        renderShapeSelector();
+        renderShapeContent();
+        renderExercise();
+        document.getElementById('year').textContent = new Date().getFullYear();
+    }
+    
+    renderAll();
+
+    // Initial fade-in
+    setTimeout(() => {
+        shapeContentWrapper.classList.remove('fade-out');
+        shapeContentWrapper.classList.add('fade-in');
+        exerciseWrapper.classList.remove('fade-out');
+        exerciseWrapper.classList.add('fade-in');
+    }, 100);
+});
+</script>
+
+</body>
 </html>
